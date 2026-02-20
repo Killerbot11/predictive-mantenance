@@ -1,19 +1,25 @@
-import os
 import joblib
+import numpy as np
+import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = "model/model.pkl"
+SCALER_PATH = "model/scaler.pkl"
 
 def load_model():
-    model_path = os.path.join(BASE_DIR, "model.pkl")
-    scaler_path = os.path.join(BASE_DIR, "scaler.pkl")
+    if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
+        raise FileNotFoundError("Model or scaler not found. Run train_model.py first.")
 
-    if not os.path.exists(model_path):
-        raise FileNotFoundError("model.pkl not found")
-
-    if not os.path.exists(scaler_path):
-        raise FileNotFoundError("scaler.pkl not found")
-
-    model = joblib.load(model_path)
-    scaler = joblib.load(scaler_path)
+    model = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
 
     return model, scaler
+
+
+def predict_failure(input_data):
+    model, scaler = load_model()
+
+    input_scaled = scaler.transform([input_data])
+    prediction = model.predict(input_scaled)
+
+    return prediction[0]
+
