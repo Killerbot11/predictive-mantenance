@@ -6,11 +6,14 @@ MODEL_PATH = "model/model.pkl"
 SCALER_PATH = "model/scaler.pkl"
 
 def load_model():
-    if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
-        raise FileNotFoundError("Model or scaler not found. Run train_model.py first.")
+    model_path = "model.pkl"
+    scaler_path = "scaler.pkl"
 
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
+    if not os.path.exists(model_path) or not os.path.exists(scaler_path):
+        raise FileNotFoundError("Model or scaler not found in repo.")
+
+    model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
 
     return model, scaler
 
@@ -22,4 +25,5 @@ def predict_failure(input_data):
     prediction = model.predict(input_scaled)
 
     return prediction[0]
+
 
