@@ -1,29 +1,29 @@
 import joblib
-import numpy as np
+import pandas as pd
 import os
 
-MODEL_PATH = "model/model.pkl"
-SCALER_PATH = "model/scaler.pkl"
-
 def load_model():
-    model_path = "model.pkl"
-    scaler_path = "scaler.pkl"
 
-    if not os.path.exists(model_path) or not os.path.exists(scaler_path):
-        raise FileNotFoundError("Model or scaler not found in repo.")
+    model = joblib.load("model/model.pkl")
+    scaler = joblib.load("model/scaler.pkl")
+    columns = joblib.load("model/columns.pkl")
 
-    model = joblib.load(model_path)
-    scaler = joblib.load(scaler_path)
-
-    return model, scaler
+    return model, scaler, columns
 
 
 def predict_failure(input_data):
-    model, scaler = load_model()
 
-    input_scaled = scaler.transform([input_data])
+    model, scaler, columns = load_model()
+
+    # Convert input to DataFrame with correct order
+    input_df = pd.DataFrame([input_data], columns=columns)
+
+    # Scale while preserving column names
+    input_scaled = pd.DataFrame(
+        scaler.transform(input_df),
+        columns=columns
+    )
+
     prediction = model.predict(input_scaled)
 
     return prediction[0]
-
-
