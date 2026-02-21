@@ -7,21 +7,21 @@ from utils import predict_failure
 st.set_page_config(page_title="Predictive Maintenance Platform", layout="wide")
 
 # -----------------------------
-# PROFESSIONAL UI + WIDTH FIX
+# PROFESSIONAL UI + SAFE FIXES
 # -----------------------------
 st.markdown("""
 <style>
 
-/* Use full width */
+/* Prevent Streamlit Cloud top bar overlap */
+.block-container {
+    padding-top: 3rem !important;
+}
+
+/* Full width layout */
 section.main > div {
     max-width: 100% !important;
     padding-left: 2rem;
     padding-right: 2rem;
-}
-
-/* Fix spacing */
-.block-container {
-    padding-top: 1rem !important;
 }
 
 /* KPI Cards */
@@ -49,11 +49,6 @@ section.main > div {
 /* Subtitle */
 .subtle-text {
     color: #6B7280;
-}
-
-/* Sidebar */
-.sidebar .sidebar-content {
-    background-color: #F7F9FC;
 }
 
 /* Buttons */
@@ -89,22 +84,16 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -----------------------------
-# HEADER (FIXED)
+# HEADER (OVERLAP FIXED)
 # -----------------------------
-header_col1, header_col2 = st.columns([6,1])
-
-with header_col1:
-    st.markdown("""
-    <div style='padding-top:5px'>
-        <div class='title-text'>AI Predictive Maintenance</div>
-        <div class='subtle-text'>
-            Monitor equipment health and predict failures using AI
-        </div>
+st.markdown("""
+<div style='margin-left: 1.5rem; margin-top: 0.5rem'>
+    <div class='title-text'>AI Predictive Maintenance</div>
+    <div class='subtle-text'>
+        Monitor equipment health and predict failures using AI
     </div>
-    """, unsafe_allow_html=True)
-
-with header_col2:
-    st.empty()
+</div>
+""", unsafe_allow_html=True)
 
 st.divider()
 
