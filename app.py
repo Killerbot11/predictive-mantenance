@@ -1,40 +1,37 @@
 import streamlit as st
-import matplotlib.pyplot as plt
-import pandas as pd
 import random
-import numpy as np
 from utils import predict_failure
 
 st.set_page_config(page_title="Predictive Maintenance Platform", layout="wide")
 
-# -----------------------------
-# MACHINE COLORS
-# -----------------------------
-machine_colors = {
-    "Machine A": "blue",
-    "Machine B": "green",
-    "Machine C": "red"
-}
+REVENUE_PER_HOUR = 15000
+FAILURE_DOWNTIME = 24
+SCHEDULED_COST = 20000
+ROUTINE_COST = 5000
 
-# -----------------------------
-# STATE INIT
-# -----------------------------
-if "health_history" not in st.session_state:
-    st.session_state.health_history = {
+if "failure_prob" not in st.session_state:
+    st.session_state.failure_prob = None
+
+if "future_prediction" not in st.session_state:
+    st.session_state.future_prediction = {
         "Machine A": [],
         "Machine B": [],
         "Machine C": []
     }
 
-if "failure_prob" not in st.session_state:
-    st.session_state.failure_prob = None
-
 if "input_data" not in st.session_state:
     st.session_state.input_data = None
 
-# -----------------------------
-# HEALTH STATUS
-# -----------------------------
+def simulate_future(prob):
+    future = []
+    current = prob
+    for _ in range(15):
+        current = min(current + random.uniform(0.02, 0.08), 1.0)
+        future.append(current)
+        if current >= 0.9:
+            break
+    return future
+
 def get_system_health(prob):
     if prob is None:
         return "Unknown"
@@ -45,6 +42,34 @@ def get_system_health(prob):
     else:
         return "Critical"
 
+def get_maintenance_cost(rul):
+    if rul <= 6:
+        return SCHEDULED_COST
+    return ROUTINE_COST
+
+def get_failure_loss(prob):
+    return prob * FAILURE_DOWNTIME * REVENUE_PER_HOUR
+
+def roi_analysis(prob, rul):
+    maintenance_cost = get_maintenance_cost(rul)
+    failure_loss = get_failure_loss(prob)
+    avoided_loss = failure_loss - maintenance_cost
+    roi = (avoided_loss - maintenance_cost) / maintenance_cost if maintenance_cost else 0
+    return maintenance_cost, failure_loss, avoided_loss, roi
+
+def decision_engine(prob, rul, roi):
+
+    if rul <= 3:
+        return "Immediate Action Required", "High Risk"
+
+    if roi > 0 and rul <= 6:
+        return "Maintain Now", "Financially Justified"
+
+    if roi > 0:
+        return "Plan Maintenance", "Upcoming Risk"
+
+    return "Monitor", "Low Financial Impact"
+
 # -----------------------------
 # LOGIN
 # -----------------------------
@@ -53,8 +78,6 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     st.title("Predictive Maintenance Platform")
-    st.caption("Industrial Monitoring Suite")
-
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
@@ -73,94 +96,30 @@ if not st.session_state.logged_in:
 st.sidebar.title("Navigation")
 
 page = st.sidebar.radio("", [
-    "Dashboard",
     "Live Monitoring",
     "AI Analysis",
-    "Reports",
-    "Alerts",
-    "About"
+    "ROI Analysis",
+    "Decision Summary",
+    "Alerts"
 ])
 
 machine = st.sidebar.selectbox("Select Machine", ["Machine A", "Machine B", "Machine C"])
 
-# -----------------------------
-# HEADER
-# -----------------------------
 health_status = get_system_health(st.session_state.failure_prob)
 
-title_col, status_col = st.columns([6,3])
-
-with title_col:
+col1, col2 = st.columns([6,3])
+with col1:
     st.title("AI Predictive Maintenance")
-    st.caption("Monitor equipment health and predict failures using AI")
-
-with status_col:
+with col2:
     st.metric("Machine", machine)
-    st.metric("System Health", health_status)
+    st.metric("Health", health_status)
 
 st.divider()
 
 # -----------------------------
-# DASHBOARD
-# -----------------------------
-if page == "Dashboard":
-
-    st.subheader("System Overview")
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Machines Online", "3")
-    col2.metric("Sensors Active", "21")
-    col3.metric("AI Engine", "Operational")
-
-    # -------- HEALTH TREND --------
-    st.subheader("Health Trend by Machine")
-
-    fig, ax = plt.subplots()
-
-    for m, history in st.session_state.health_history.items():
-        if history:
-            ax.plot(history, marker='o', label=m, color=machine_colors[m])
-
-    ax.set_ylim(0,1)
-    ax.set_ylabel("Failure Probability")
-    ax.set_xlabel("Prediction Run")
-    ax.legend()
-
-    st.pyplot(fig)
-
-    # -------- SENSOR DISTRIBUTION --------
-    st.subheader("Sensor Distribution by Machine")
-
-    fig, ax = plt.subplots()
-
-    for m in st.session_state.health_history.keys():
-        sensor_data = np.random.normal(50, 15, 100)
-        ax.hist(sensor_data, bins=15, alpha=0.4, label=m, color=machine_colors[m])
-
-    ax.legend()
-    st.pyplot(fig)
-
-    # -------- RISK TREND --------
-    st.subheader("Risk Trend by Machine")
-
-    fig, ax = plt.subplots()
-
-    for m, history in st.session_state.health_history.items():
-        if history:
-            ax.scatter(range(len(history)), history,
-                       label=m,
-                       color=machine_colors[m])
-
-    ax.set_ylim(0,1)
-    ax.legend()
-    st.pyplot(fig)
-
-# -----------------------------
 # LIVE MONITORING
 # -----------------------------
-elif page == "Live Monitoring":
-
-    st.subheader("Operational Parameters")
+if page == "Live Monitoring":
 
     op1 = st.slider("Machine Load", 0.0, 1.0, 0.45)
     op2 = st.slider("Operating Speed", 0.0, 1.0, 0.34)
@@ -174,27 +133,76 @@ elif page == "Live Monitoring":
 # -----------------------------
 elif page == "AI Analysis":
 
-    st.subheader("Failure Prediction")
-
     if st.session_state.input_data is None:
         st.warning("Run Live Monitoring first")
     else:
         if st.button("Run Prediction"):
+
             result = predict_failure(st.session_state.input_data)
             prob = random.uniform(0.6,0.95) if result==1 else random.uniform(0.05,0.4)
 
             st.session_state.failure_prob = prob
-            st.session_state.health_history[machine].append(prob)
+            future = simulate_future(prob)
+            st.session_state.future_prediction[machine] = future
 
         if st.session_state.failure_prob:
             st.metric("Failure Probability", f"{round(st.session_state.failure_prob*100,2)}%")
 
 # -----------------------------
+# ROI ANALYSIS
+# -----------------------------
+elif page == "ROI Analysis":
+
+    future = st.session_state.future_prediction[machine]
+
+    if not future:
+        st.info("Run AI Analysis first")
+    else:
+        rul = len(future)
+        maintenance_cost, failure_loss, avoided_loss, roi = roi_analysis(
+            st.session_state.failure_prob,
+            rul
+        )
+
+        st.metric("Maintenance Investment", f"₹{maintenance_cost}")
+        st.metric("Potential Failure Loss", f"₹{int(failure_loss)}")
+        st.metric("Loss Prevented", f"₹{int(avoided_loss)}")
+        st.metric("ROI", f"{round(roi*100,2)} %")
+
+# -----------------------------
+# DECISION SUMMARY
+# -----------------------------
+elif page == "Decision Summary":
+
+    future = st.session_state.future_prediction[machine]
+
+    if not future:
+        st.info("Run AI Analysis first")
+    else:
+
+        rul = len(future)
+        maintenance_cost, failure_loss, avoided_loss, roi = roi_analysis(
+            st.session_state.failure_prob,
+            rul
+        )
+
+        decision, reason = decision_engine(
+            st.session_state.failure_prob,
+            rul,
+            roi
+        )
+
+        st.subheader("Executive Decision Summary")
+
+        st.metric("Recommended Action", decision)
+        st.metric("Justification", reason)
+        st.metric("Remaining Life (cycles)", rul)
+        st.metric("ROI", f"{round(roi*100,2)}%")
+
+# -----------------------------
 # ALERTS
 # -----------------------------
 elif page == "Alerts":
-
-    st.subheader("System Alerts")
 
     status = get_system_health(st.session_state.failure_prob)
 
@@ -206,23 +214,3 @@ elif page == "Alerts":
         st.success("System operating normally.")
     else:
         st.info("Run AI Analysis to generate system health.")
-
-# -----------------------------
-# REPORTS
-# -----------------------------
-elif page == "Reports":
-
-    st.subheader("Generate Report")
-
-    if st.session_state.failure_prob:
-        report = pd.DataFrame({
-            "Machine":[machine],
-            "Failure Probability":[st.session_state.failure_prob]
-        })
-        st.download_button("Download CSV Report", report.to_csv(index=False), "report.csv")
-
-# -----------------------------
-# ABOUT
-# -----------------------------
-elif page == "About":
-    st.write("Enterprise AI Predictive Maintenance Platform")
