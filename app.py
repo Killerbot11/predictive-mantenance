@@ -8,10 +8,23 @@ from utils import predict_failure
 st.set_page_config(page_title="Predictive Maintenance Platform", layout="wide")
 
 # -----------------------------
+# MACHINE COLORS
+# -----------------------------
+machine_colors = {
+    "Machine A": "blue",
+    "Machine B": "green",
+    "Machine C": "red"
+}
+
+# -----------------------------
 # STATE INIT
 # -----------------------------
 if "health_history" not in st.session_state:
-    st.session_state.health_history = []
+    st.session_state.health_history = {
+        "Machine A": [],
+        "Machine B": [],
+        "Machine C": []
+    }
 
 if "failure_prob" not in st.session_state:
     st.session_state.failure_prob = None
@@ -20,7 +33,7 @@ if "input_data" not in st.session_state:
     st.session_state.input_data = None
 
 # -----------------------------
-# SYSTEM HEALTH
+# HEALTH STATUS
 # -----------------------------
 def get_system_health(prob):
     if prob is None:
@@ -100,71 +113,46 @@ if page == "Dashboard":
     col3.metric("AI Engine", "Operational")
 
     # -------- HEALTH TREND --------
-    if st.session_state.health_history:
-        st.subheader("Health Trend")
-        fig, ax = plt.subplots()
-        ax.plot(st.session_state.health_history, marker='o')
-        ax.set_ylim(0,1)
-        ax.set_ylabel("Failure Probability")
-        ax.set_xlabel("Prediction Run")
-        st.pyplot(fig)
-
-    # -------- SENSOR DISTRIBUTION --------
-    st.subheader("Sensor Distribution")
-
-    sensor_data = np.random.normal(50, 15, 100)
+    st.subheader("Health Trend by Machine")
 
     fig, ax = plt.subplots()
-    ax.hist(sensor_data, bins=20)
-    ax.set_title("Sensor Value Distribution")
+
+    for m, history in st.session_state.health_history.items():
+        if history:
+            ax.plot(history, marker='o', label=m, color=machine_colors[m])
+
+    ax.set_ylim(0,1)
+    ax.set_ylabel("Failure Probability")
+    ax.set_xlabel("Prediction Run")
+    ax.legend()
+
+    st.pyplot(fig)
+
+    # -------- SENSOR DISTRIBUTION --------
+    st.subheader("Sensor Distribution by Machine")
+
+    fig, ax = plt.subplots()
+
+    for m in st.session_state.health_history.keys():
+        sensor_data = np.random.normal(50, 15, 100)
+        ax.hist(sensor_data, bins=15, alpha=0.4, label=m, color=machine_colors[m])
+
+    ax.legend()
     st.pyplot(fig)
 
     # -------- RISK TREND --------
-    st.subheader("Risk Trend Over Time")
-
-    risk_series = [random.uniform(0.2,0.9) for _ in range(10)]
+    st.subheader("Risk Trend by Machine")
 
     fig, ax = plt.subplots()
-    ax.plot(risk_series)
+
+    for m, history in st.session_state.health_history.items():
+        if history:
+            ax.scatter(range(len(history)), history,
+                       label=m,
+                       color=machine_colors[m])
+
     ax.set_ylim(0,1)
-    ax.set_title("AI Risk Trend")
-    st.pyplot(fig)
-
-    # -------- OPERATING RADAR --------
-    st.subheader("Operating Conditions")
-
-    labels = ['Load', 'Speed', 'Stress']
-    values = [random.random(), random.random(), random.random()]
-
-    angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False).tolist()
-    values += values[:1]
-    angles += angles[:1]
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, polar=True)
-    ax.plot(angles, values)
-    ax.fill(angles, values, alpha=0.3)
-    ax.set_thetagrids(np.degrees(angles[:-1]), labels)
-    st.pyplot(fig)
-
-    # -------- AI CONFIDENCE --------
-    st.subheader("AI Confidence")
-
-    confidence = random.uniform(0.6,0.95)
-
-    fig, ax = plt.subplots()
-    ax.bar(["Confidence"], [confidence])
-    ax.set_ylim(0,1)
-    st.pyplot(fig)
-
-    # -------- STABILITY INDEX --------
-    st.subheader("System Stability Index")
-
-    stability = random.uniform(0.5,0.95)
-
-    fig, ax = plt.subplots()
-    ax.barh(["Stability"], [stability])
-    ax.set_xlim(0,1)
+    ax.legend()
     st.pyplot(fig)
 
 # -----------------------------
@@ -196,7 +184,7 @@ elif page == "AI Analysis":
             prob = random.uniform(0.6,0.95) if result==1 else random.uniform(0.05,0.4)
 
             st.session_state.failure_prob = prob
-            st.session_state.health_history.append(prob)
+            st.session_state.health_history[machine].append(prob)
 
         if st.session_state.failure_prob:
             st.metric("Failure Probability", f"{round(st.session_state.failure_prob*100,2)}%")
