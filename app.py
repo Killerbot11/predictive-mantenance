@@ -7,65 +7,70 @@ from utils import predict_failure
 st.set_page_config(page_title="Predictive Maintenance Platform", layout="wide")
 
 # -----------------------------
-# THEME-AWARE COLORS (REAL FIX)
+# THEME COLORS
 # -----------------------------
 theme = st.get_option("theme.base")
 
 if theme == "dark":
     card_bg = "#1E1E1E"
     border = "#2D2D2D"
-    text_color = "#FAFAFA"
+    badge_bg = "#1F3D2B"
+    badge_text = "#A6E3B8"
 else:
     card_bg = "#FFFFFF"
     border = "#E6E9EF"
-    text_color = "#111111"
+    badge_bg = "#E6F4EA"
+    badge_text = "#137333"
 
+# -----------------------------
+# HEALTH HISTORY INIT
+# -----------------------------
+if "health_history" not in st.session_state:
+    st.session_state.health_history = []
+
+# -----------------------------
+# SYSTEM HEALTH LOGIC
+# -----------------------------
+def get_system_health(prob):
+
+    if prob is None:
+        return "Unknown", "#9AA0A6", "#E8EAED"
+
+    if prob < 0.4:
+        return "Healthy", "#137333", "#E6F4EA"
+    elif prob < 0.7:
+        return "Warning", "#B06000", "#FFF4E5"
+    else:
+        return "Critical", "#C5221F", "#FCE8E6"
+
+# -----------------------------
+# GLOBAL STYLING
+# -----------------------------
 st.markdown(f"""
 <style>
-
-/* Prevent Cloud toolbar overlap */
 .block-container {{
     padding-top: 3rem !important;
 }}
 
-/* Full width layout */
 section.main > div {{
     max-width: 100% !important;
     padding-left: 2rem;
     padding-right: 2rem;
 }}
 
-/* KPI Cards */
 .kpi-card {{
     background: {card_bg};
     padding: 18px;
     border-radius: 12px;
     border: 1px solid {border};
-    color: {text_color};
 }}
 
-/* Section Panels */
 .section-card {{
     background: {card_bg};
     padding: 24px;
     border-radius: 12px;
     border: 1px solid {border};
-    color: {text_color};
 }}
-
-/* Title */
-.title-text {{
-    font-size: 28px;
-    font-weight: 600;
-    color: {text_color};
-}}
-
-/* Subtitle */
-.subtle-text {{
-    color: {text_color};
-    opacity: 0.7;
-}}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -94,20 +99,6 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -----------------------------
-# HEADER
-# -----------------------------
-st.markdown(f"""
-<div style='margin-left: 1.5rem; margin-top: 0.5rem'>
-    <div class='title-text'>AI Predictive Maintenance</div>
-    <div class='subtle-text'>
-        Monitor equipment health and predict failures using AI
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-st.divider()
-
-# -----------------------------
 # SIDEBAR
 # -----------------------------
 st.sidebar.title("Navigation")
@@ -123,11 +114,51 @@ page = st.sidebar.radio("", [
 
 machine = st.sidebar.selectbox("Select Machine", ["Machine A", "Machine B", "Machine C"])
 
+# -----------------------------
+# STATE
+# -----------------------------
+if "failure_prob" not in st.session_state:
+    st.session_state.failure_prob = None
+
 if "input_data" not in st.session_state:
     st.session_state.input_data = None
 
-if "failure_prob" not in st.session_state:
-    st.session_state.failure_prob = None
+# -----------------------------
+# HEADER WITH HEALTH
+# -----------------------------
+health_status, health_color, health_bg = get_system_health(st.session_state.failure_prob)
+
+title_col, status_col = st.columns([6,3])
+
+with title_col:
+    st.markdown("### AI Predictive Maintenance")
+    st.caption("Monitor equipment health and predict failures using AI")
+
+with status_col:
+    st.markdown(f"""
+    <div style='text-align:right; margin-top: 8px;'>
+
+        <span style='font-size:13px; padding:6px 12px;
+        border-radius:8px;
+        background-color:{badge_bg};
+        color:{badge_text};
+        margin-right:6px;
+        font-weight:500;'>
+        {machine}
+        </span>
+
+        <span style='font-size:13px; padding:6px 12px;
+        border-radius:8px;
+        background-color:{health_bg};
+        color:{health_color};
+        font-weight:600;'>
+        {health_status}
+        </span>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+st.divider()
 
 # -----------------------------
 # DASHBOARD
@@ -147,21 +178,16 @@ if page == "Dashboard":
     with col3:
         st.markdown("<div class='kpi-card'><b>AI Engine</b><h2>Operational</h2></div>", unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    # Health Trend
+    if st.session_state.health_history:
+        st.subheader("Health Trend")
 
-    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-    st.subheader("Machine Health Comparison")
-
-    comparison = {
-        "Machine A": random.randint(70,95),
-        "Machine B": random.randint(60,90),
-        "Machine C": random.randint(50,85)
-    }
-
-    fig, ax = plt.subplots()
-    ax.bar(comparison.keys(), comparison.values())
-    st.pyplot(fig)
-    st.markdown("</div>", unsafe_allow_html=True)
+        fig, ax = plt.subplots()
+        ax.plot(st.session_state.health_history, marker='o')
+        ax.set_ylim(0,1)
+        ax.set_ylabel("Failure Probability")
+        ax.set_xlabel("Prediction Run")
+        st.pyplot(fig)
 
 # -----------------------------
 # LIVE MONITORING
@@ -169,8 +195,6 @@ if page == "Dashboard":
 elif page == "Live Monitoring":
 
     st.subheader("Operational Parameters")
-
-    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
 
@@ -181,19 +205,8 @@ elif page == "Live Monitoring":
     with col3:
         op3 = st.slider("Environmental Stress", 0.0, 1.0, 0.89)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
     sensor_values = [random.uniform(0,100) for _ in range(21)]
     st.session_state.input_data = [op1, op2, op3] + sensor_values
-
-    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-    st.subheader("Sensor Trends")
-
-    fig, ax = plt.subplots()
-    ax.plot(sensor_values)
-    st.pyplot(fig)
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
 # AI ANALYSIS
@@ -208,20 +221,12 @@ elif page == "AI Analysis":
         if st.button("Run Prediction"):
             result = predict_failure(st.session_state.input_data)
             prob = random.uniform(0.6,0.95) if result==1 else random.uniform(0.05,0.4)
+
             st.session_state.failure_prob = prob
+            st.session_state.health_history.append(prob)
 
         if st.session_state.failure_prob:
-
-            st.markdown("<div class='kpi-card'>", unsafe_allow_html=True)
             st.metric("Failure Probability", f"{round(st.session_state.failure_prob*100,2)}%")
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-            fig, ax = plt.subplots()
-            ax.barh(["Risk"], [st.session_state.failure_prob])
-            ax.set_xlim(0,1)
-            st.pyplot(fig)
-            st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
 # ALERTS
@@ -230,10 +235,16 @@ elif page == "Alerts":
 
     st.subheader("System Alerts")
 
-    if st.session_state.failure_prob and st.session_state.failure_prob > 0.7:
-        st.error("High failure risk detected. Maintenance recommended.")
+    status, _, _ = get_system_health(st.session_state.failure_prob)
+
+    if status == "Critical":
+        st.error("Critical risk detected. Immediate maintenance required.")
+    elif status == "Warning":
+        st.warning("System showing early signs of failure.")
+    elif status == "Healthy":
+        st.success("System operating normally.")
     else:
-        st.success("No critical alerts")
+        st.info("Run AI Analysis to generate system health.")
 
 # -----------------------------
 # REPORTS
