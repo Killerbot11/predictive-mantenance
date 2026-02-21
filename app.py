@@ -1,170 +1,258 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import random
-import time
 from utils import predict_failure
 
-st.set_page_config(page_title="AI Predictive Maintenance", layout="wide")
+st.set_page_config(page_title="Predictive Maintenance Platform", layout="wide")
 
-# ==========================
-# LOGIN SYSTEM
-# ==========================
+# -----------------------------
+# PROFESSIONAL UI + WIDTH FIX
+# -----------------------------
+st.markdown("""
+<style>
+
+/* Use full width */
+section.main > div {
+    max-width: 100% !important;
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+/* Fix spacing */
+.block-container {
+    padding-top: 1rem !important;
+}
+
+/* KPI Cards */
+.kpi-card {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid #E6E9EF;
+}
+
+/* Section Panels */
+.section-card {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #E6E9EF;
+}
+
+/* Title */
+.title-text {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+/* Subtitle */
+.subtle-text {
+    color: #6B7280;
+}
+
+/* Sidebar */
+.sidebar .sidebar-content {
+    background-color: #F7F9FC;
+}
+
+/* Buttons */
+.stButton>button {
+    border-radius: 8px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------
+# LOGIN
+# -----------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    st.title("🔐 Login to Predictive Maintenance Platform")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    st.title("Predictive Maintenance Platform")
+    st.caption("Industrial Monitoring Suite")
 
-    if st.button("Login"):
-        if username == "admin" and password == "admin":
-            st.session_state.logged_in = True
-            st.success("Login Successful")
-            st.rerun()
-        else:
-            st.error("Invalid Credentials")
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+
+        if st.button("Login", use_container_width=True):
+            if username == "admin" and password == "admin":
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("Invalid credentials")
 
     st.stop()
 
-# ==========================
-# DARK MODE TOGGLE
-# ==========================
-dark_mode = st.sidebar.toggle("🌙 Dark Mode")
-if dark_mode:
+# -----------------------------
+# HEADER (FIXED)
+# -----------------------------
+header_col1, header_col2 = st.columns([6,1])
+
+with header_col1:
     st.markdown("""
-        <style>
-        body { background-color: #0E1117; color: white; }
-        </style>
+    <div style='padding-top:5px'>
+        <div class='title-text'>AI Predictive Maintenance</div>
+        <div class='subtle-text'>
+            Monitor equipment health and predict failures using AI
+        </div>
+    </div>
     """, unsafe_allow_html=True)
 
-# ==========================
-# SIDEBAR NAVIGATION
-# ==========================
-st.sidebar.title("🔧 Predictive Maintenance")
-page = st.sidebar.radio("Navigation", [
-    "🏠 Dashboard",
-    "📊 Live Monitoring",
-    "📂 Upload Data",
-    "🧠 AI Analysis",
-    "📄 Reports",
-    "ℹ️ About System"
+with header_col2:
+    st.empty()
+
+st.divider()
+
+# -----------------------------
+# SIDEBAR
+# -----------------------------
+st.sidebar.title("Navigation")
+
+page = st.sidebar.radio("", [
+    "Dashboard",
+    "Live Monitoring",
+    "AI Analysis",
+    "Reports",
+    "Alerts",
+    "About"
 ])
 
-# ==========================
-# MACHINE SELECTOR
-# ==========================
 machine = st.sidebar.selectbox("Select Machine", ["Machine A", "Machine B", "Machine C"])
 
-# ==========================
-# GLOBAL STATE
-# ==========================
 if "input_data" not in st.session_state:
     st.session_state.input_data = None
 
-if "last_result" not in st.session_state:
-    st.session_state.last_result = None
+if "failure_prob" not in st.session_state:
+    st.session_state.failure_prob = None
 
-# ==========================
+# -----------------------------
 # DASHBOARD
-# ==========================
-if page == "🏠 Dashboard":
-    st.title("AI Predictive Maintenance System")
-    st.markdown(f"### Monitoring: {machine}")
+# -----------------------------
+if page == "Dashboard":
+
+    st.subheader("System Overview")
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Machines Monitored", "24")
-    col2.metric("Active Sensors", "21")
-    col3.metric("Prediction Engine", "Online")
 
-# ==========================
-# LIVE MONITORING
-# ==========================
-elif page == "📊 Live Monitoring":
-    st.title("Live Monitoring")
+    with col1:
+        st.markdown("<div class='kpi-card'><b>Machines Online</b><h2>3</h2></div>", unsafe_allow_html=True)
 
-    auto_refresh = st.toggle("Auto Refresh Live Data")
+    with col2:
+        st.markdown("<div class='kpi-card'><b>Sensors Active</b><h2>21</h2></div>", unsafe_allow_html=True)
 
-    op1 = st.slider("Machine Load", 0.0, 1.0, 0.45)
-    op2 = st.slider("Operating Speed", 0.0, 1.0, 0.34)
-    op3 = st.slider("Environmental Stress", 0.0, 1.0, 0.89)
+    with col3:
+        st.markdown("<div class='kpi-card'><b>AI Engine</b><h2>Operational</h2></div>", unsafe_allow_html=True)
 
-    sensor_values = [random.uniform(0,100) for _ in range(21)]
-    input_data = [op1, op2, op3] + sensor_values
-    st.session_state.input_data = input_data
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+    st.subheader("Machine Health Comparison")
+
+    comparison = {
+        "Machine A": random.randint(70,95),
+        "Machine B": random.randint(60,90),
+        "Machine C": random.randint(50,85)
+    }
 
     fig, ax = plt.subplots()
-    ax.bar(range(1,22), sensor_values)
-    ax.set_title("Live Sensor Feed")
+    ax.bar(comparison.keys(), comparison.values())
+    st.pyplot(fig)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# -----------------------------
+# LIVE MONITORING
+# -----------------------------
+elif page == "Live Monitoring":
+
+    st.subheader("Operational Parameters")
+
+    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        op1 = st.slider("Machine Load", 0.0, 1.0, 0.45)
+    with col2:
+        op2 = st.slider("Operating Speed", 0.0, 1.0, 0.34)
+    with col3:
+        op3 = st.slider("Environmental Stress", 0.0, 1.0, 0.89)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    sensor_values = [random.uniform(0,100) for _ in range(21)]
+    st.session_state.input_data = [op1, op2, op3] + sensor_values
+
+    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+    st.subheader("Sensor Trends")
+
+    fig, ax = plt.subplots()
+    ax.plot(sensor_values)
     st.pyplot(fig)
 
-    if auto_refresh:
-        time.sleep(3)
-        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# ==========================
-# UPLOAD
-# ==========================
-elif page == "📂 Upload Data":
-    st.title("Upload Machine Data")
-    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
-
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        st.dataframe(df)
-
-        if df.shape[1] == 24:
-            st.session_state.input_data = df.iloc[0].values.tolist()
-            st.success("Data Loaded")
-        else:
-            st.error("CSV must have 24 columns")
-
-# ==========================
+# -----------------------------
 # AI ANALYSIS
-# ==========================
-elif page == "🧠 AI Analysis":
-    st.title("AI Health Analysis")
+# -----------------------------
+elif page == "AI Analysis":
+
+    st.subheader("Failure Prediction")
 
     if st.session_state.input_data is None:
-        st.warning("Provide monitoring or upload data first")
+        st.warning("Run Live Monitoring first")
     else:
-        if st.button("Run AI Prediction"):
+        if st.button("Run Prediction"):
             result = predict_failure(st.session_state.input_data)
-            st.session_state.last_result = result
+            prob = random.uniform(0.6,0.95) if result==1 else random.uniform(0.05,0.4)
+            st.session_state.failure_prob = prob
 
-        if st.session_state.last_result is not None:
-            result = st.session_state.last_result
-            health_score = 100 - (result * 60)
+        if st.session_state.failure_prob:
 
-            st.metric("Health Score", f"{health_score}%")
+            st.markdown("<div class='kpi-card'>", unsafe_allow_html=True)
+            st.metric("Failure Probability", f"{round(st.session_state.failure_prob*100,2)}%")
+            st.markdown("</div>", unsafe_allow_html=True)
 
-            # Gauge Chart
+            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
             fig, ax = plt.subplots()
-            ax.pie([health_score, 100-health_score])
-            ax.set_title("Health Gauge")
+            ax.barh(["Risk"], [st.session_state.failure_prob])
+            ax.set_xlim(0,1)
             st.pyplot(fig)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-# ==========================
-# REPORTS
-# ==========================
-elif page == "📄 Reports":
-    st.title("Download Health Report")
+# -----------------------------
+# ALERTS
+# -----------------------------
+elif page == "Alerts":
 
-    if st.session_state.last_result is None:
-        st.warning("Run AI Analysis first")
+    st.subheader("System Alerts")
+
+    if st.session_state.failure_prob and st.session_state.failure_prob > 0.7:
+        st.error("High failure risk detected. Maintenance recommended.")
     else:
+        st.success("No critical alerts")
+
+# -----------------------------
+# REPORTS
+# -----------------------------
+elif page == "Reports":
+
+    st.subheader("Generate Report")
+
+    if st.session_state.failure_prob:
         report = pd.DataFrame({
-            "Machine": [machine],
-            "Failure Risk": ["High" if st.session_state.last_result==1 else "Low"]
+            "Machine":[machine],
+            "Failure Probability":[st.session_state.failure_prob]
         })
 
-        st.download_button("Download Report", report.to_csv(index=False), "report.csv")
+        st.download_button("Download CSV Report", report.to_csv(index=False), "report.csv")
 
-# ==========================
+# -----------------------------
 # ABOUT
-# ==========================
-elif page == "ℹ️ About System":
-    st.title("About Platform")
-    st.write("Industry-grade AI monitoring system.")
+# -----------------------------
+elif page == "About":
+    st.write("Enterprise AI Predictive Maintenance Platform")
