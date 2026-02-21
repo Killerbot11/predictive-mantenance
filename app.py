@@ -32,11 +32,9 @@ if "health_history" not in st.session_state:
 # SYSTEM HEALTH LOGIC
 # -----------------------------
 def get_system_health(prob):
-
     if prob is None:
         return "Unknown", "#9AA0A6", "#E8EAED"
-
-    if prob < 0.4:
+    elif prob < 0.4:
         return "Healthy", "#137333", "#E6F4EA"
     elif prob < 0.7:
         return "Warning", "#B06000", "#FFF4E5"
@@ -51,20 +49,17 @@ st.markdown(f"""
 .block-container {{
     padding-top: 3rem !important;
 }}
-
 section.main > div {{
     max-width: 100% !important;
     padding-left: 2rem;
     padding-right: 2rem;
 }}
-
 .kpi-card {{
     background: {card_bg};
     padding: 18px;
     border-radius: 12px;
     border: 1px solid {border};
 }}
-
 .section-card {{
     background: {card_bg};
     padding: 24px;
@@ -124,7 +119,7 @@ if "input_data" not in st.session_state:
     st.session_state.input_data = None
 
 # -----------------------------
-# HEADER WITH HEALTH
+# HEADER WITH HEALTH (FIXED)
 # -----------------------------
 health_status, health_color, health_bg = get_system_health(st.session_state.failure_prob)
 
@@ -171,14 +166,11 @@ if page == "Dashboard":
 
     with col1:
         st.markdown("<div class='kpi-card'><b>Machines Online</b><h2>3</h2></div>", unsafe_allow_html=True)
-
     with col2:
         st.markdown("<div class='kpi-card'><b>Sensors Active</b><h2>21</h2></div>", unsafe_allow_html=True)
-
     with col3:
         st.markdown("<div class='kpi-card'><b>AI Engine</b><h2>Operational</h2></div>", unsafe_allow_html=True)
 
-    # Health Trend
     if st.session_state.health_history:
         st.subheader("Health Trend")
 
@@ -258,7 +250,6 @@ elif page == "Reports":
             "Machine":[machine],
             "Failure Probability":[st.session_state.failure_prob]
         })
-
         st.download_button("Download CSV Report", report.to_csv(index=False), "report.csv")
 
 # -----------------------------
