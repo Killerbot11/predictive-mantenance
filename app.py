@@ -7,67 +7,29 @@ from utils import predict_failure
 st.set_page_config(page_title="Predictive Maintenance Platform", layout="wide")
 
 # -----------------------------
-# THEME COLORS
-# -----------------------------
-theme = st.get_option("theme.base")
-
-if theme == "dark":
-    card_bg = "#1E1E1E"
-    border = "#2D2D2D"
-    badge_bg = "#1F3D2B"
-    badge_text = "#A6E3B8"
-else:
-    card_bg = "#FFFFFF"
-    border = "#E6E9EF"
-    badge_bg = "#E6F4EA"
-    badge_text = "#137333"
-
-# -----------------------------
 # HEALTH HISTORY INIT
 # -----------------------------
 if "health_history" not in st.session_state:
     st.session_state.health_history = []
+
+if "failure_prob" not in st.session_state:
+    st.session_state.failure_prob = None
+
+if "input_data" not in st.session_state:
+    st.session_state.input_data = None
 
 # -----------------------------
 # SYSTEM HEALTH LOGIC
 # -----------------------------
 def get_system_health(prob):
     if prob is None:
-        return "Unknown", "#9AA0A6", "#E8EAED"
+        return "Unknown"
     elif prob < 0.4:
-        return "Healthy", "#137333", "#E6F4EA"
+        return "Healthy"
     elif prob < 0.7:
-        return "Warning", "#B06000", "#FFF4E5"
+        return "Warning"
     else:
-        return "Critical", "#C5221F", "#FCE8E6"
-
-# -----------------------------
-# GLOBAL STYLING
-# -----------------------------
-st.markdown(f"""
-<style>
-.block-container {{
-    padding-top: 3rem !important;
-}}
-section.main > div {{
-    max-width: 100% !important;
-    padding-left: 2rem;
-    padding-right: 2rem;
-}}
-.kpi-card {{
-    background: {card_bg};
-    padding: 18px;
-    border-radius: 12px;
-    border: 1px solid {border};
-}}
-.section-card {{
-    background: {card_bg};
-    padding: 24px;
-    border-radius: 12px;
-    border: 1px solid {border};
-}}
-</style>
-""", unsafe_allow_html=True)
+        return "Critical"
 
 # -----------------------------
 # LOGIN
@@ -110,48 +72,19 @@ page = st.sidebar.radio("", [
 machine = st.sidebar.selectbox("Select Machine", ["Machine A", "Machine B", "Machine C"])
 
 # -----------------------------
-# STATE
+# HEADER
 # -----------------------------
-if "failure_prob" not in st.session_state:
-    st.session_state.failure_prob = None
-
-if "input_data" not in st.session_state:
-    st.session_state.input_data = None
-
-# -----------------------------
-# HEADER WITH HEALTH (FIXED)
-# -----------------------------
-health_status, health_color, health_bg = get_system_health(st.session_state.failure_prob)
+health_status = get_system_health(st.session_state.failure_prob)
 
 title_col, status_col = st.columns([6,3])
 
 with title_col:
-    st.markdown("### AI Predictive Maintenance")
+    st.title("AI Predictive Maintenance")
     st.caption("Monitor equipment health and predict failures using AI")
 
 with status_col:
-    st.markdown(f"""
-    <div style='text-align:right; margin-top: 8px;'>
-
-        <span style='font-size:13px; padding:6px 12px;
-        border-radius:8px;
-        background-color:{badge_bg};
-        color:{badge_text};
-        margin-right:6px;
-        font-weight:500;'>
-        {machine}
-        </span>
-
-        <span style='font-size:13px; padding:6px 12px;
-        border-radius:8px;
-        background-color:{health_bg};
-        color:{health_color};
-        font-weight:600;'>
-        {health_status}
-        </span>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric("Machine", machine)
+    st.metric("System Health", health_status)
 
 st.divider()
 
@@ -164,13 +97,11 @@ if page == "Dashboard":
 
     col1, col2, col3 = st.columns(3)
 
-    with col1:
-        st.markdown("<div class='kpi-card'><b>Machines Online</b><h2>3</h2></div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown("<div class='kpi-card'><b>Sensors Active</b><h2>21</h2></div>", unsafe_allow_html=True)
-    with col3:
-        st.markdown("<div class='kpi-card'><b>AI Engine</b><h2>Operational</h2></div>", unsafe_allow_html=True)
+    col1.metric("Machines Online", "3")
+    col2.metric("Sensors Active", "21")
+    col3.metric("AI Engine", "Operational")
 
+    # Health Trend
     if st.session_state.health_history:
         st.subheader("Health Trend")
 
@@ -227,7 +158,7 @@ elif page == "Alerts":
 
     st.subheader("System Alerts")
 
-    status, _, _ = get_system_health(st.session_state.failure_prob)
+    status = get_system_health(st.session_state.failure_prob)
 
     if status == "Critical":
         st.error("Critical risk detected. Immediate maintenance required.")
