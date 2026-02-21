@@ -7,54 +7,64 @@ from utils import predict_failure
 st.set_page_config(page_title="Predictive Maintenance Platform", layout="wide")
 
 # -----------------------------
-# PROFESSIONAL UI + SAFE FIXES
+# THEME-AWARE COLORS (REAL FIX)
 # -----------------------------
-st.markdown("""
+theme = st.get_option("theme.base")
+
+if theme == "dark":
+    card_bg = "#1E1E1E"
+    border = "#2D2D2D"
+    text_color = "#FAFAFA"
+else:
+    card_bg = "#FFFFFF"
+    border = "#E6E9EF"
+    text_color = "#111111"
+
+st.markdown(f"""
 <style>
 
-/* Prevent Streamlit Cloud top bar overlap */
-.block-container {
+/* Prevent Cloud toolbar overlap */
+.block-container {{
     padding-top: 3rem !important;
-}
+}}
 
 /* Full width layout */
-section.main > div {
+section.main > div {{
     max-width: 100% !important;
     padding-left: 2rem;
     padding-right: 2rem;
-}
+}}
 
 /* KPI Cards */
-.kpi-card {
-    background: white;
+.kpi-card {{
+    background: {card_bg};
     padding: 18px;
     border-radius: 12px;
-    border: 1px solid #E6E9EF;
-}
+    border: 1px solid {border};
+    color: {text_color};
+}}
 
 /* Section Panels */
-.section-card {
-    background: white;
+.section-card {{
+    background: {card_bg};
     padding: 24px;
     border-radius: 12px;
-    border: 1px solid #E6E9EF;
-}
+    border: 1px solid {border};
+    color: {text_color};
+}}
 
 /* Title */
-.title-text {
+.title-text {{
     font-size: 28px;
     font-weight: 600;
-}
+    color: {text_color};
+}}
 
 /* Subtitle */
-.subtle-text {
-    color: #6B7280;
-}
-
-/* Buttons */
-.stButton>button {
-    border-radius: 8px;
-}
+.subtle-text {{
+    color: {text_color};
+    opacity: 0.7;
+}}
 
 </style>
 """, unsafe_allow_html=True)
@@ -84,9 +94,9 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -----------------------------
-# HEADER (OVERLAP FIXED)
+# HEADER
 # -----------------------------
-st.markdown("""
+st.markdown(f"""
 <div style='margin-left: 1.5rem; margin-top: 0.5rem'>
     <div class='title-text'>AI Predictive Maintenance</div>
     <div class='subtle-text'>
